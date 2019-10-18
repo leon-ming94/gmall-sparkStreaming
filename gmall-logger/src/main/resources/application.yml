@@ -1,0 +1,6 @@
+server:
+  port: 8088
+
+spring:
+  kafka:
+    bootstrap-servers: hadoop112:9092,hadoop113:9092,hadoop114:9092
