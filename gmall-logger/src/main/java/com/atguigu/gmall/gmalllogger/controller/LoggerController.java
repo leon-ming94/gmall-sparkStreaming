@@ -2,6 +2,7 @@ package com.atguigu.gmall.gmalllogger.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.atguigu.constant.GmallConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -28,13 +29,14 @@ public class LoggerController {
             log.error("日志记录有误");
         }
 
-        jsonObject.put("time", System.currentTimeMillis());
+        jsonObject.put("ts", System.currentTimeMillis());
         String type = jsonObject.getString("type");
         if("startup".equals(type)){
-            kafkaTemplate.send("startup", jsonObject.toJSONString());
+            kafkaTemplate.send(GmallConstant.KAFKA_STARTUP, jsonObject.toJSONString());
         }else if("event".equals(type)){
-            kafkaTemplate.send("event", jsonObject.toJSONString());
+            kafkaTemplate.send(GmallConstant.KAFKA_EVENT, jsonObject.toJSONString());
         }
+        log.info(jsonObject.toJSONString());
 
         return "success";
     }
