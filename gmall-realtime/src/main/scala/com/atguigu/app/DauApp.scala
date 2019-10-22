@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSON
 import com.atguigu.bean.StartUpLog
 import com.atguigu.constant.GmallConstant
 import com.atguigu.util.{MyKafkaUtil, RedisUtil}
+import org.apache.hadoop.conf.Configuration
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.apache.spark.SparkConf
 import org.apache.spark.broadcast.Broadcast
@@ -15,6 +16,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.{DStream, InputDStream}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 import redis.clients.jedis.Jedis
+import org.apache.phoenix.spark._
 
 
 /**
@@ -40,6 +42,7 @@ object DauApp {
 
             startUpLog
         })
+        startUpDStream.cache()
 
         //TODO 2 分区内去重
         val filtterDStream: DStream[StartUpLog] = startUpDStream.map(startUpLog => (startUpLog.mid, startUpLog)).groupByKey().flatMap {
@@ -65,6 +68,7 @@ object DauApp {
                 val result: Boolean = dataSet.contains(startUpLog.mid)
                 !result
             })
+            jedisClient.close()
             println("去重后" + totallyFilterRDD.count())
             totallyFilterRDD
         })
@@ -81,6 +85,10 @@ object DauApp {
                 }
                 jedisClient.close()
             }
+        }
+
+        totallyFilterDStream.foreachRDD{rdd=>
+            rdd.saveToPhoenix("GMALL2019_DAU",Seq("MID", "UID", "APPID", "AREA", "OS", "CH", "TYPE", "VS", "LOGDATE", "LOGHOUR", "TS") ,new Configuration,Some("hadoop112,hadoop113,hadoop114:2181"))
         }
 
         ssc.start()
